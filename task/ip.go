@@ -107,28 +107,52 @@ func (r *IPRanges) chooseIPv4() {
 }
 
 func (r *IPRanges) chooseIPv6() {
-	if r.mask == "/128" {
+	maskSize, _ := r.ipNet.Mask.Size()
+
+	if maskSize == 128 {
 		r.appendIP(r.firstIP)
 	} else {
-		var tempIP uint8
-		for r.ipNet.Contains(r.firstIP) {
-			r.firstIP[15] = randIPEndWith(255)
-			r.firstIP[14] = randIPEndWith(255)
+		if maskSize <= 120 {
+			// 对于 /120，我们可以在最后的8位进行迭代
+			for i := uint16(0); i <= 0xFF; i++ {
+				r.firstIP[15] = byte(i & 0xFF)
+				targetIP := make([]byte, len(r.firstIP))
+				copy(targetIP, r.firstIP)
+				r.appendIP(targetIP)
+			}
+		} else if maskSize <= 112 {
+			// 对于 /112 以及更大范围，我们可以在最后的16位进行迭代
+			for i := uint16(0); i <= 0xFFFF; i++ {
+				for j := 0; j < 2; j++ {
+					r.firstIP[14+j] = byte((i >> (8*(1-j))) & 0xFF)
+				}
+				targetIP := make([]byte, len(r.firstIP))
+				copy(targetIP, r.firstIP)
+				r.appendIP(targetIP)
+			}
+		} else {
+			// 这是原来的随机生成方法，保留作为默认处理方式
+			var tempIP uint8
+			for r.ipNet.Contains(r.firstIP) {
+				r.firstIP[15] = randIPEndWith(255)
+				r.firstIP[14] = randIPEndWith(255)
 
-			targetIP := make([]byte, len(r.firstIP))
-			copy(targetIP, r.firstIP)
-			r.appendIP(targetIP)
+				targetIP := make([]byte, len(r.firstIP))
+				copy(targetIP, r.firstIP)
+				r.appendIP(targetIP)
 
-			for i := 13; i >= 0; i-- {
-				tempIP = r.firstIP[i]
-				r.firstIP[i] += randIPEndWith(255)
-				if r.firstIP[i] >= tempIP {
-					break
+				for i := 13; i >= 0; i-- {
+					tempIP = r.firstIP[i]
+					r.firstIP[i] += randIPEndWith(255)
+					if r.firstIP[i] >= tempIP {
+						break
+					}
 				}
 			}
 		}
 	}
 }
+
 
 func loadIPRanges() []*net.IPAddr {
 	ipRanges := newIPRanges()
