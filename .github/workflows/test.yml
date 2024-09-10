@@ -1,0 +1,36 @@
+name: Test CI
+
+on:
+  workflow_dispatch:
+jobs:
+  release_docker:
+    runs-on: ubuntu-latest
+    steps:
+
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Setup Release Cli
+        uses: robinraju/release-downloader@v1.10
+        with:
+          repository: "Mmx233/GoReleaseCli"
+          latest: true
+          fileName: 'release_linux_amd64.tar.gz'
+          extract: true
+          out-file-path: './build/'
+
+      - name: Build
+        run: ./build/release . --perm 777 -c tar.gz --extra-arches --output build/output
+
+      - name: Upload assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/output/*.tar.gz
+          prerelease: false
