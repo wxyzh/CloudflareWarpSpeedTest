@@ -112,7 +112,7 @@ func (r *IPRanges) chooseIPv6() {
 	if maskSize == 128 {
 		r.appendIP(r.firstIP)
 	} else {
-		if maskSize <= 120 {
+		if maskSize == 120 {
 			// 对于 /120，我们可以在最后的8位进行迭代
 			for i := uint16(0); i <= 0xFF; i++ {
 				r.firstIP[15] = byte(i & 0xFF)
@@ -120,7 +120,7 @@ func (r *IPRanges) chooseIPv6() {
 				copy(targetIP, r.firstIP)
 				r.appendIP(targetIP)
 			}
-		} else if maskSize <= 112 {
+		} else if maskSize == 112 {
 			// 对于 /112 以及更大范围，我们可以在最后的16位进行迭代
 			for i := uint16(0); i <= 0xFFFF; i++ {
 				for j := 0; j < 2; j++ {
