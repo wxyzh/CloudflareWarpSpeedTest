@@ -1,0 +1,32 @@
+name: Test CI
+
+on:
+  workflow_dispatch:
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Setup Release Cli
+        uses: robinraju/release-downloader@v1.10
+        with:
+          repository: "Mmx233/GoReleaseCli"
+          latest: true
+          fileName: 'release_linux_amd64.tar.gz'
+          extract: true
+          out-file-path: './build/'
+
+      - name: Build
+        run: ./build/release . --perm 777 -c tar.gz --platforms linux/386,windows/amd64,linux/amd64,windows/386 --output build/output -o CloudflareWarpSpeedTest
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          path: |
+            build/output/
